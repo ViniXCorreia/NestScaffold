@@ -1,0 +1,8 @@
+{
+  "name": "nest-postgres-scaffold",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "api",
+  "workspaceFolder": "/usr/src/app",
+  "overrideCommand": false,
+  "remoteUser": "root"
+}
