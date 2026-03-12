@@ -147,7 +147,7 @@ OBS: Hoje essa aplicação não usa “criptografia reversível” de senha; ela
 
 O hash é feito com HMAC-SHA256 usando a chave global CRYPTO_KEY do .env
 
-Se você alterou a sua CRYPTO_KEY, altere a senha criptografada direto no banco.
+Se você alterou a sua CRYPTO_KEY, altere a senha criptografada direto no banco para o usuário ADMIN.
 
   
   
