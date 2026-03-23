@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiHideProperty, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
 	Column,
 	CreateDateColumn,
@@ -27,7 +27,7 @@ export class UserEntity {
 	@Column({ nullable: true })
 	lastName?: string;
 
-	@ApiProperty({ example: 'hash-da-senha', description: 'Senha armazenada' })
+	@ApiHideProperty()
 	@Column()
 	password: string;
 

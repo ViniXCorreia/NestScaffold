@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import {
 	IForgotPasswordUsecase,
 } from './forgot-password.interface';
@@ -9,6 +9,8 @@ import { MailService } from 'src/_shared/mailModule/mail.service';
 import { AuthService } from 'src/_shared/auth/auth.service';
 
 export class ForgotPasswordUsecase implements IForgotPasswordUsecase {
+	private readonly logger = new Logger(ForgotPasswordUsecase.name);
+
 	constructor(
 		@Inject(RepositoryProxyModule.USER_REPOSITORY)
 		private readonly personRepository: Repository<UserEntity>,
@@ -20,7 +22,10 @@ export class ForgotPasswordUsecase implements IForgotPasswordUsecase {
 			email: email,
 		});
 		if (!findUser) {
-			throw new Error('400-Usuário não encontrado');
+			this.logger.warn(
+				`Solicitação de recuperação para e-mail inexistente: ${email}`
+			);
+			return true;
 		}
 
 		const sendToken = await this.authService.login(findUser);

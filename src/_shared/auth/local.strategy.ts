@@ -7,7 +7,7 @@ import { AuthService } from './auth.service';
 export class LocalStrategy extends PassportStrategy(Strategy) {
 	constructor(private authService: AuthService) {
 		super({
-			userNameField: 'email',
+			usernameField: 'email',
 			passwordField: 'password',
 		});
 	}
@@ -16,9 +16,6 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
 		const user = await this.authService.validateUser(email, password);
 		if (!user) {
 			throw new UnauthorizedException('Credenciais inválidas');
-		}
-		if (typeof user == 'string') {
-			throw new UnauthorizedException('Valide sua conta para continuar!');
 		}
 		return user;
 	}

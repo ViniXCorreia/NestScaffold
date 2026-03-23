@@ -17,7 +17,7 @@ import { CryptoModule } from '../crypto/crypto.module';
 			inject: [ConfigService],
 			useFactory: async (configService: ConfigService) => ({
 				secret: configService.get('JWT_SECRET'),
-				signOptions: { expiresIn: '3d' },
+				signOptions: { expiresIn: '1h' },
 			}),
 		}),
 		CryptoModule,

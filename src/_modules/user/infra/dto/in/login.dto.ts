@@ -3,11 +3,11 @@ import { IsString } from 'class-validator';
 
 export class LoginDTO {
 	@ApiProperty({
-		example: '12345678901',
-		description: 'Documento utilizado no login',
+		example: 'usuario@email.com.br',
+		description: 'Email utilizado no login',
 	})
 	@IsString()
-	username: string;
+	email: string;
 
 	@ApiProperty({ example: 'Senha@123', description: 'Senha do usuario' })
 	@IsString()

@@ -2,7 +2,12 @@ import { RepositoryProxyModule } from 'src/infra/database/proxy/repository.proxy
 import {
 	IUpdateUserUseCase,
 } from './updateUser.interface';
-import { Inject, Logger, NotFoundException } from '@nestjs/common';
+import {
+	ForbiddenException,
+	Inject,
+	Logger,
+	NotFoundException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { UserEntity } from 'src/infra/database/entities/user.entity';
 import { UpdateUserDto } from '../../infra/dto/in/update-user.dto';
@@ -10,6 +15,7 @@ import { RoleEntity } from 'src/infra/database/entities/role.entity';
 import { CryptoService } from 'src/_shared/crypto/crypto.service';
 
 export class UpdateUserUseCase implements IUpdateUserUseCase {
+	private static readonly ADMIN_ROLE_ID = 1;
 	logger = new Logger();
 	constructor(
 		@Inject(RepositoryProxyModule.USER_REPOSITORY)
@@ -19,7 +25,24 @@ export class UpdateUserUseCase implements IUpdateUserUseCase {
 		private readonly cryptoService: CryptoService
 	) {}
 
-	async execute(documentNumber: string, updateUserDto: UpdateUserDto): Promise<UserEntity> {
+	private isAdmin(reqUser: any): boolean {
+		const roleIds = Array.isArray(reqUser?.roles)
+			? reqUser.roles
+			: Array.isArray(reqUser?.user?.roles)
+				? reqUser.user.roles
+				: [];
+
+		return (
+			reqUser?.role === 'ADMIN' ||
+			roleIds.includes(UpdateUserUseCase.ADMIN_ROLE_ID)
+		);
+	}
+
+	async execute(
+		documentNumber: string,
+		updateUserDto: UpdateUserDto,
+		reqUser: any
+	): Promise<UserEntity> {
 		try {
 			const findUserIfExists = await this.userRepository.findOne({
 				where: {
@@ -42,6 +65,13 @@ export class UpdateUserUseCase implements IUpdateUserUseCase {
 				if (!role) {
 					throw new NotFoundException('Role não encontrada!');
 				}
+
+				if (role.description === 'ADMIN' && !this.isAdmin(reqUser)) {
+					throw new ForbiddenException(
+						'Apenas usuários ADMIN podem promover outro usuário para ADMIN.'
+					);
+				}
+
 				findUserIfExists.roles = [role];
 			}
 

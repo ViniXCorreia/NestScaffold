@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserEntity } from 'src/infra/database/entities/user.entity';
+import { UserResponseDto } from './user-response.dto';
 
 export class FindAllUsersResponseDto {
-	@ApiProperty({ type: () => [UserEntity], description: 'Usuarios retornados' })
-	items: UserEntity[];
+	@ApiProperty({ type: () => [UserResponseDto], description: 'Usuarios retornados' })
+	items: UserResponseDto[];
 
 	@ApiProperty({ example: 1, description: 'Pagina atual' })
 	pageNumber: number;

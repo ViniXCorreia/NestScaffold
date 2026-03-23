@@ -8,6 +8,8 @@ import {
 
 @Injectable()
 export class AdminRoleGuard implements CanActivate {
+	private static readonly ADMIN_ROLE_ID = 1;
+
 	canActivate(context: ExecutionContext): boolean {
 		const request = context.switchToHttp().getRequest();
 		const user = request.user;
@@ -16,16 +18,14 @@ export class AdminRoleGuard implements CanActivate {
 			throw new UnauthorizedException('Usuário não autenticado.');
 		}
 
-		const roleNames = Array.isArray(user.roleNames)
-			? user.roleNames
-			: Array.isArray(user.user?.roleNames)
-				? user.user.roleNames
+		const roleIds = Array.isArray(user.roles)
+			? user.roles
+			: Array.isArray(user.user?.roles)
+				? user.user.roles
 				: [];
 
 		const hasAdminRole =
-			user.role === 'ADMIN' ||
-			roleNames.includes('ADMIN') ||
-			(Array.isArray(user.roles) && user.roles.includes('ADMIN'));
+			user.role === 'ADMIN' || roleIds.includes(AdminRoleGuard.ADMIN_ROLE_ID);
 
 		if (!hasAdminRole) {
 			throw new ForbiddenException(

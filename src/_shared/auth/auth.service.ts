@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { Logger, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserEntity } from 'src/infra/database/entities/user.entity';
 import { UserService } from 'src/_modules/user/infra/controller/user.service';
@@ -6,6 +6,8 @@ import { CryptoService } from '../crypto/crypto.service';
 
 @Injectable()
 export class AuthService {
+	private readonly logger = new Logger(AuthService.name);
+
 	constructor(
 		@Inject(forwardRef(() => UserService))
 		private userService: UserService,
@@ -16,10 +18,19 @@ export class AuthService {
 	async validateUser(
 		email: string,
 		password: string
-	): Promise<UserEntity | string> {
-		const findUser = await this.userService.findOneUserByEmail(email);
+	): Promise<UserEntity | null> {
+		let findUser: UserEntity;
+
+		try {
+			findUser = await this.userService.findOneUserByEmail(email);
+		} catch (error) {
+			this.logger.warn(`Falha no login para ${email}: usuário não encontrado.`);
+			return null;
+		}
+
 		if (!findUser.validate) {
-			return 'Ative sua conta!';
+			this.logger.warn(`Falha no login para ${email}: conta não validada.`);
+			return null;
 		}
 		const validPassword = this.cryptoService.comparePassword(
 			password,
@@ -28,6 +39,8 @@ export class AuthService {
 		if (findUser && validPassword) {
 			return findUser;
 		}
+
+		this.logger.warn(`Falha no login para ${email}: credenciais inválidas.`);
 		return null;
 	}
 
@@ -35,15 +48,11 @@ export class AuthService {
 		const roles = user.roles
 			.map((role: any) => role?.id)
 			.filter((roleId: any) => roleId != null);
-		const roleNames = user.roles
-			.map((role: any) => role?.description)
-			.filter((roleName: any) => roleName != null);
 
 		return this.jwtService.signAsync({
 			user: {
 				id: user.id,
 				roles,
-				roleNames,
 			}
 		});
 	}

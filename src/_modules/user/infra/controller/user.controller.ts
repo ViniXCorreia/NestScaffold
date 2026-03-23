@@ -3,6 +3,7 @@ import {
 	Get,
 	Post,
 	Body,
+	HttpCode,
 	Patch,
 	Param,
 	Delete,
@@ -33,8 +34,9 @@ import { PaginationDto } from 'src/_shared/protocols/dto/pagination.dto';
 import { LoginDTO } from '../dto/in/login.dto';
 import { LoginPersonResponseDto } from '../dto/out/login-response.dto';
 import { FindAllUsersResponseDto } from '../dto/out/findAllUsers-response.dto';
-
-import { UserEntity } from 'src/infra/database/entities/user.entity';
+import { UserResponseDto } from '../dto/out/user-response.dto';
+import { ActionMessageDto } from '../dto/out/action-message.dto';
+import { ForgotPasswordDto } from '../dto/in/forgot-password.dto';
 
 @ApiTags('Users')
 @Controller('user')
@@ -60,11 +62,12 @@ export class UserController {
 	@ApiResponse({
 		status: 201,
 		description: 'Usuario criado com sucesso',
-		type: UserEntity,
+		type: ActionMessageDto,
 	})
 	@ApiResponse({ status: 400, description: 'Dados invalidos' })
 	async create(@Body() createUserDto: CreateUserDto) {
-		return await this.userService.create(createUserDto);
+		await this.userService.create(createUserDto);
+		return { message: 'Usuario criado com sucesso' };
 	}
 
 	@UseGuards(JwtAuthGuard, AdminRoleGuard)
@@ -74,12 +77,13 @@ export class UserController {
 	@ApiResponse({
 		status: 201,
 		description: 'Administrador criado com sucesso',
-		type: UserEntity,
+		type: UserResponseDto,
 	})
 	@ApiResponse({ status: 401, description: 'Nao autorizado' })
 	@ApiResponse({ status: 403, description: 'Acesso restrito a administradores' })
 	async createAdm(@Body() createAdminUserDto: CreateAdminUserDto) {
-		return await this.userService.createAdm(createAdminUserDto);
+		const createdAdmin = await this.userService.createAdm(createAdminUserDto);
+		return UserResponseDto.fromEntity(createdAdmin);
 	}
 
 	@Post('recovery-password')
@@ -95,22 +99,20 @@ export class UserController {
 	}
 
 	@Post('forgot-password')
+	@HttpCode(202)
 	@ApiOperation({ summary: 'Solicita envio de token para recuperar senha' })
-	@ApiBody({
-		schema: {
-			type: 'string',
-			example: 'vinicius@email.com',
-			description: 'E-mail do usuario',
-		},
-	})
+	@ApiBody({ type: ForgotPasswordDto })
 	@ApiResponse({
-		status: 201,
+		status: 202,
 		description: 'Solicitacao processada com sucesso',
-		schema: { type: 'boolean', example: true },
+		type: ActionMessageDto,
 	})
-	@ApiResponse({ status: 400, description: 'Usuario nao encontrado' })
-	async forgotPassword(@Body() email: string) {
-		return await this.userService.forgotPassword(email);
+	async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+		await this.userService.forgotPassword(forgotPasswordDto.email);
+		return {
+			message:
+				'Se o e-mail existir, enviaremos as instruções para recuperação de senha.',
+		};
 	}
 
 	@UseGuards(JwtAuthGuard, AdminRoleGuard)
@@ -168,7 +170,12 @@ export class UserController {
 	})
 	@ApiResponse({ status: 401, description: 'Nao autorizado' })
 	async findAll(@Query() paginationDto: PaginationDto) {
-		return await this.userService.findAll(paginationDto);
+		const response = await this.userService.findAll(paginationDto);
+
+		return {
+			...response,
+			items: response.items.map((user) => UserResponseDto.fromEntity(user)),
+		};
 	}
 
 	@UseGuards(JwtAuthGuard)
@@ -184,14 +191,16 @@ export class UserController {
 	@ApiResponse({
 		status: 200,
 		description: 'Usuario encontrado com sucesso',
-		type: UserEntity,
+		type: UserResponseDto,
 	})
 	@ApiResponse({ status: 401, description: 'Nao autorizado' })
 	@ApiResponse({ status: 404, description: 'Usuario nao encontrado' })
 	async findOneUserByDocumentNumber(
 		@Param('documentNumber') documentNumber: string
 	) {
-		return await this.userService.findOneUserByDocumentNumber(documentNumber);
+		const user =
+			await this.userService.findOneUserByDocumentNumber(documentNumber);
+		return UserResponseDto.fromEntity(user);
 	}
 
 	@UseGuards(JwtAuthGuard)
@@ -207,15 +216,18 @@ export class UserController {
 	@ApiResponse({
 		status: 200,
 		description: 'Usuario atualizado com sucesso',
-		type: UserEntity,
+		type: ActionMessageDto,
 	})
 	@ApiResponse({ status: 401, description: 'Nao autorizado' })
+	@ApiResponse({ status: 403, description: 'Apenas usuários ADMIN podem promover outro usuário para ADMIN' })
 	@ApiResponse({ status: 404, description: 'Usuario nao encontrado' })
 	async update(
+		@Request() req: any,
 		@Param('documentNumber') documentNumber: string,
 		@Body() updateUserDto: UpdateUserDto
 	) {
-		return await this.userService.update(documentNumber, updateUserDto);
+		await this.userService.update(documentNumber, updateUserDto, req.user);
+		return { message: 'Usuario atualizado com sucesso' };
 	}
 
 	@UseGuards(JwtAuthGuard)
@@ -231,12 +243,13 @@ export class UserController {
 	@ApiResponse({
 		status: 200,
 		description: 'Usuario removido com sucesso',
-		type: UserEntity,
+		type: ActionMessageDto,
 	})
 	@ApiResponse({ status: 401, description: 'Nao autorizado' })
 	@ApiResponse({ status: 404, description: 'Usuario nao encontrado' })
 	async remove(@Param('documentNumber') documentNumber: string) {
-		return await this.userService.remove(documentNumber);
+		await this.userService.remove(documentNumber);
+		return { message: 'Usuario deletado com sucesso' };
 	}
 
 	@Get('/:id/validate')

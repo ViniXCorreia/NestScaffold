@@ -185,8 +185,8 @@ export class UserService {
 		return await this.findOnePersoByDocumentNumberUseCase.execute(documentNumber);
 	}
 
-	async update(documentNumber: string, updateUserDto: UpdateUserDto) {
-		return await this.updateUserUseCase.execute(documentNumber,	updateUserDto);
+	async update(documentNumber: string, updateUserDto: UpdateUserDto, reqUser: any) {
+		return await this.updateUserUseCase.execute(documentNumber, updateUserDto, reqUser);
 	}
 
 	async remove(documentNumber: string) {
